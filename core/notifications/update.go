@@ -1,71 +1,34 @@
 package notifications
 
 import (
-
-	//	"time"
-
-	//	"github.com/patrickmn/go-cache"
-
-	"fmt"
-
 	"github.com/chanxuehong/wechat.v2/mp/core"
 	"github.com/chanxuehong/wechat.v2/mp/message/template"
 )
 
-// BookUpdateMSG 消息结构
-type BookUpdateMSG struct {
-	BookName        template.DataItem `json:"book_name"`
-	EndChapterTitle template.DataItem `json:"end_chapter_title"`
+// UpdateMSG 消息结构
+type UpdateMSG struct {
+	Name    template.DataItem `json:"name"`
+	Chapter template.DataItem `json:"chapter"`
 }
 
-func Notice() {
-	//	fansCache = cache.New(5*time.Minute, 30*time.Second)
-	wxAppID := "wx702b93aef72f3549"
-	wxAppSecret := "8b69f45fc737a938cbaaffc05b192394"
+// Update 更新通知
+/*
+   您关注的XXX已经更新到XXX章节了！
+*/
+func Update(ToUser, Name, Chapter, url string) (msgID int64, err error) {
+
 	ats := core.NewDefaultAccessTokenServer(wxAppID, wxAppSecret, nil)
 	clt := core.NewClient(ats, nil)
-
-	// fmt.Println(clt.Token())
-
-	bn := BookUpdateMSG{
-		BookName:        template.DataItem{Value: "xxx", Color: ""},
-		EndChapterTitle: template.DataItem{Value: "ooo", Color: ""},
-	}
-
-	msg := template.TemplateMessage2{
-		ToUser:     "o7UTkjr7if4AQgcPmveQ5wJ5alsA",
-		TemplateId: "9S_pcl3gklUmE7jOrHa2mTOcGPhj5_wnuWt2F6MH_qQ",
-		URL:        "",
-		Data:       bn,
-	}
-
-	msgID, err := template.Send(clt, msg)
-	fmt.Println(msgID)
-	fmt.Println(err)
-}
-
-// UpdateNotice 更新通知
-func UpdateNotice(ToUser, BookName, Chapter, url string) (msgID int64, err error) {
-
-	wxAppID := "wx702b93aef72f3549"
-	wxAppSecret := "8b69f45fc737a938cbaaffc05b192394"
-	ats := core.NewDefaultAccessTokenServer(wxAppID, wxAppSecret, nil)
-	clt := core.NewClient(ats, nil)
-
-	// fmt.Println(clt.Token())
-
-	bn := BookUpdateMSG{
-		BookName:        template.DataItem{Value: BookName, Color: ""},
-		EndChapterTitle: template.DataItem{Value: Chapter, Color: ""},
-	}
 
 	msg := template.TemplateMessage2{
 		ToUser:     ToUser,
-		TemplateId: "9S_pcl3gklUmE7jOrHa2mTOcGPhj5_wnuWt2F6MH_qQ",
+		TemplateId: "czFgqLwZ-39nMW_nAfBAs-U4ZnMAddj5uAY00oHG3cc",
 		URL:        url,
-		Data:       bn,
+		Data: UpdateMSG{
+			Name:    template.DataItem{Value: Name, Color: ""},
+			Chapter: template.DataItem{Value: Chapter, Color: ""},
+		},
 	}
 
-	// msgID, err := template.Send(clt, msg)
 	return template.Send(clt, msg)
 }

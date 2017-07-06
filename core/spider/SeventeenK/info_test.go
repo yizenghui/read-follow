@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package qidian
+package SeventeenK
 
 import (
 	"fmt"
@@ -10,12 +10,15 @@ import (
 )
 
 func Test_GetInfo(t *testing.T) {
-	book, err := GetInfo("http://book.qidian.com/info/1005406936")
+	// http://www.17k.com/book/2469390.html
+	//http://www.17k.com/book/777148.html
+	book, err := GetInfo("http://www.17k.com/book/777148.html")
+
 	if err != nil {
 		panic("spider data error")
 	}
-
 	fmt.Println(book)
+
 	// fmt.Printf(" %v %v-> %v %v %v  %v %v %v \n", book.IsVIP, book.Date, book.Name, book.Author, book.Chapter, book.ChapterURL, book.AuthorURL, book.BookURL)
 
 }

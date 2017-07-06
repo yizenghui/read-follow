@@ -1,4 +1,4 @@
-package main
+package zongheng
 
 import (
 	"fmt"
@@ -26,10 +26,10 @@ type Book struct {
 
 var db *gorm.DB
 
-func main() {
+func run() {
 
 	var err error
-	db, err = gorm.Open("sqlite3", "book.db")
+	db, err = gorm.Open("sqlite3", "zongheng.db")
 	// db, err := gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
 
 	if err != nil {

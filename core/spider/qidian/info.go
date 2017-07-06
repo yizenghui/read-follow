@@ -40,7 +40,7 @@ func GetInfo(url string) (Info, error) {
 
 	item.AuthorURL, _ = g.Find(".book-info").Find(".writer").Attr("href")
 
-	item.Total, _ = g.Find(".book-info").Find("p").Eq(2).Find("em").Eq(0).Attr("href")
+	item.Total = strings.TrimSpace(g.Find(".book-info").Find("p").Eq(2).Find("em").Eq(0).Text())
 
 	checkLinkIsJobInfo, _ := regexp.MatchString(`vip(?P<reader>\w+).qidian.com`, item.ChapterURL)
 	if checkLinkIsJobInfo {

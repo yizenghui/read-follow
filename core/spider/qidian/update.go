@@ -38,19 +38,21 @@ func GetUpdateRows(url string) (UpdateRows, error) {
 
 	// 下列内容于 2017年4月4日 20:50:24 抓取
 	g.Find(".rank-table-list tbody tr").Each(func(i int, content *goquery.Selection) {
-		// 职位详细页链接地址
+		// 书详细页
 		item.BookURL, _ = content.Find(".name").Attr("href")
 		item.ChapterURL, _ = content.Find(".chapter").Attr("href")
-		// 标题
+		// 书名
 		item.Name = strings.TrimSpace(content.Find(".name").Text())
-		// 地点
+		// 章节
 		item.Chapter = strings.TrimSpace(content.Find(".chapter").Text())
-		// 企业名
+		// 作者
 		item.Author = strings.TrimSpace(content.Find(".author").Text())
-		// 企业详细页链接地址
+		// 作者详细页
 		item.AuthorURL, _ = content.Find(".author").Attr("href")
-		// 职位更新时间
+		// 小说更新时间
 		item.Date = strings.TrimSpace(content.Find(".date").Text())
+		// 字数
+		item.Total = strings.TrimSpace(content.Find(".total").Text())
 
 		checkLinkIsJobInfo, _ := regexp.MatchString(`vip(?P<reader>\w+).qidian.com`, item.ChapterURL)
 		if checkLinkIsJobInfo {

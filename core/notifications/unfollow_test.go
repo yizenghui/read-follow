@@ -9,11 +9,9 @@ import (
 	"testing"
 )
 
-func Test_Notice(t *testing.T) {
+func Test_Unfollow(t *testing.T) {
 	toUser := "o7UTkjr7if4AQgcPmveQ5wJ5alsA"
 	bookName := "亡灵元帅"
-	chapter := "安分"
-	url := ""
-	msgID, _ := Update(toUser, bookName, chapter, url)
+	msgID, _ := Unfollow(toUser, bookName)
 	fmt.Println(msgID)
 }
