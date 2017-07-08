@@ -2,8 +2,8 @@ package spider
 
 import "regexp"
 
-//Get 获取最新更新列表
-func Get(url string) ([]Book, error) {
+//GetUpdate 获取最新更新列表
+func GetUpdate(url string) ([]Book, error) {
 
 	// 起点列表
 	checkLinkIsQiDian, _ := regexp.MatchString(`http:\/\/a.qidian.com\/\?orderId=5&page=(?P<p>\d+)&style=2`, url)

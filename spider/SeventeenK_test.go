@@ -15,7 +15,7 @@ func Test_GetSeventeenKUpdate(t *testing.T) {
 	var books []Book
 
 	url = "http://all.17k.com/lib/book/2_0_0_0_0_0_0_0_1.html"
-	books, _ = Get(url)
+	books, _ = GetUpdate(url)
 	fmt.Println(books)
 
 }

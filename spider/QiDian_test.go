@@ -13,6 +13,6 @@ func Test_GetQiDianUpdate(t *testing.T) {
 	var url string
 	var books []Book
 	url = "http://a.qidian.com/?orderId=5&page=1&style=2"
-	books, _ = Get(url)
+	books, _ = GetUpdate(url)
 	fmt.Println(books)
 }

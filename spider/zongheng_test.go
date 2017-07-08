@@ -15,7 +15,7 @@ func Test_GetZongHengUpdate(t *testing.T) {
 	var books []Book
 
 	url = "http://book.zongheng.com/store/c0/c0/b0/u0/p1/v9/s9/t0/ALL.html"
-	books, _ = Get(url)
+	books, _ = GetUpdate(url)
 	fmt.Println(books)
 
 }
