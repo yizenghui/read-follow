@@ -1,4 +1,4 @@
-package zongheng
+package main
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
-	"github.com/yizenghui/read-follow/core/spider/qidian"
+	"github.com/yizenghui/read-follow/core/spider/zongheng"
 )
 
 // Book 书籍模型
@@ -22,14 +22,18 @@ type Book struct {
 	ChapterURL string
 	AuthorURL  string
 	IsVIP      bool
+	PublishAt  int64 `sql:"index" default:"0"`
 }
 
 var db *gorm.DB
 
-func run() {
+func init() {
+}
+
+func main() {
 
 	var err error
-	db, err = gorm.Open("sqlite3", "zongheng.db")
+	db, err = gorm.Open("sqlite3", "book.db")
 	// db, err := gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
 
 	if err != nil {
@@ -40,12 +44,12 @@ func run() {
 	db.AutoMigrate(&Book{})
 	defer db.Close()
 
+	spiderBookList("http://book.zongheng.com/store/c0/c0/b0/u0/p1/v9/s9/t0/ALL.html")
 	syncUpdateList()
-
 }
 
 func syncUpdateList() {
-	url := "http://a.qidian.com/?orderId=5&page=1&style=2"
+	url := "http://book.zongheng.com/store/c0/c0/b0/u0/p1/v9/s9/t0/ALL.html"
 	ticker := time.NewTicker(time.Minute * 2)
 	for _ = range ticker.C {
 		fmt.Printf("ticked at %v spider %v \n", time.Now(), url)
@@ -54,7 +58,7 @@ func syncUpdateList() {
 }
 
 func spiderBookList(url string) {
-	rows, err := qidian.GetUpdateRows(url)
+	rows, err := zongheng.GetUpdateRows(url)
 	if err == nil {
 		for _, info := range rows {
 			time.Sleep(1 * time.Second)
@@ -64,8 +68,7 @@ func spiderBookList(url string) {
 }
 
 // 同步职位
-func syncBook(info qidian.UpdateItem) {
-
+func syncBook(info zongheng.UpdateItem) {
 	var book Book
 	db.Where(Book{BookURL: info.BookURL}).FirstOrCreate(&book)
 
@@ -78,8 +81,11 @@ func syncBook(info qidian.UpdateItem) {
 		book.Author = info.Author
 		book.AuthorURL = info.AuthorURL
 		book.BookURL = info.BookURL
+		book.Total = info.Total
 		book.IsVIP = info.IsVIP
+		book.PublishAt = 0
 		db.Save(&book)
+		// fmt.Println(book)
 		fmt.Printf("%v  %v  %v\n", book.ID, book.Name, book.Chapter)
 	}
 
