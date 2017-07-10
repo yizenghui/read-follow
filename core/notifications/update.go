@@ -25,8 +25,8 @@ func Update(ToUser, Name, Chapter, url string) (msgID int64, err error) {
 		TemplateId: "czFgqLwZ-39nMW_nAfBAs-U4ZnMAddj5uAY00oHG3cc",
 		URL:        url,
 		Data: UpdateMSG{
-			Name:    template.DataItem{Value: Name, Color: ""},
-			Chapter: template.DataItem{Value: Chapter, Color: ""},
+			Name:    template.DataItem{Value: Name, Color: "#173177"},
+			Chapter: template.DataItem{Value: Chapter, Color: "#173177"},
 		},
 	}
 

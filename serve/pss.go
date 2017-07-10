@@ -12,6 +12,8 @@ import (
 	"github.com/hprose/hprose-golang/rpc"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/yizenghui/read-follow/core/event"
+	"github.com/yizenghui/read-follow/core/models"
 )
 
 type (
@@ -27,21 +29,6 @@ type (
 		AuthorURL  string `json:"author_url" valid:"MaxSize(255);"`
 		IsVIP      bool   `json:"is_vip"`
 	}
-
-	// Book 数据模型
-	Book struct {
-		gorm.Model
-		Name       string `gorm:"size:255"`
-		Chapter    string `gorm:"size:255"`
-		Total      string `gorm:"size:255"`
-		Author     string `gorm:"size:255"`
-		Date       string `gorm:"size:255"`
-		BookURL    string `sql:"index"`
-		ChapterURL string `gorm:"size:255"`
-		AuthorURL  string `gorm:"size:255"`
-		IsVIP      bool
-		Rank       float64 `sql:"index"`
-	}
 )
 
 // 数据库对象
@@ -52,7 +39,7 @@ func init() {
 	db, _ = gorm.Open("postgres", "host=localhost user=postgres dbname=spider password=123456 sslmode=disable")
 	// db, _ = gorm.Open("postgres", "host=192.157.192.118 user=xiaoyi dbname=spider sslmode=disable password=123456")
 
-	db.AutoMigrate(&Book{})
+	db.AutoMigrate(&models.Book{}, &models.User{})
 }
 
 func main() {
@@ -86,15 +73,22 @@ func save(str string) string {
 		return string("同步职位失败")
 	}
 
-	var book Book
+	var book models.Book
 
-	db.Where(Book{BookURL: qbook.BookURL}).FirstOrCreate(&book)
+	db.Where(models.Book{BookURL: qbook.BookURL}).FirstOrCreate(&book)
+
+	bookChapterURL := book.ChapterURL
+
 	err = RequstBookSaveData(&book, qbook)
 	if err != nil {
 		return "err: " + err.Error() + "!"
 	}
 
-	// fmt.Println(job.Param, job.Tags)
+	if bookChapterURL != book.ChapterURL {
+		var users []models.User
+		db.Model(&book).Association("users").Find(&users)
+		event.BookUpdateNotice(book, users)
+	}
 
 	// TODO 获取票数
 	vote := 1   // 支持
@@ -149,7 +143,7 @@ func GetRank(vote int, devote int, timestamp int64, level int) float64 {
 }
 
 //RequstBookSaveData 把请求的数据包转成数据模型中的参数
-func RequstBookSaveData(book *Book, qb RequstBook) error {
+func RequstBookSaveData(book *models.Book, qb RequstBook) error {
 
 	book.Name = qb.Name
 	book.Chapter = qb.Chapter
