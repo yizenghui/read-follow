@@ -12,37 +12,44 @@
         <!-- 使用 -->
 		<div class="weui-form-preview">
             <div class="weui-form-preview__hd">
-                <label class="weui-form-preview__label">最新{{ if .Book.IsVIP }}vip{{ else }}免费{{ end }}章节</label>
-                <em class="weui-form-preview__value">{{.Book.Chapter}}</em>
+                <label class="weui-form-preview__label">
+                    {{.Chapter}} 
+                </label>
+                <em class="weui-form-preview__value"> {{ if .IsVIP }}vip{{ end }} </em>
+                
             </div>
             <div class="weui-form-preview__bd">
                 <div class="weui-form-preview__item">
                     <label class="weui-form-preview__label">书名</label>
-                    <span class="weui-form-preview__value">{{.Book.Name}}</span>
+                    <span class="weui-form-preview__value">{{.Name}}</span>
                 </div>
                 <div class="weui-form-preview__item">
                     <label class="weui-form-preview__label">作者</label>
-                    <span class="weui-form-preview__value">{{.Book.Author}}</span>
+                    <span class="weui-form-preview__value">{{.Author}}</span>
+                </div>
+                
+                 <div class="weui-form-preview__item">
+                    <label class="weui-form-preview__label">类型</label>
+                    <span class="weui-form-preview__value">{{ if .IsVIP }} vip {{else}} 免费 {{ end }}</span>
                 </div>
                 <div class="weui-form-preview__item">
                     <label class="weui-form-preview__label">首发</label>
-                    <span class="weui-form-preview__value"> {{.Book..BookURL}} </span>
+                    <span class="weui-form-preview__value"> {{.BookURL}} </span>
                 </div>
                 <div class="weui-form-preview__item">
                     <label class="weui-form-preview__label">作品字数</label>
-                    <span class="weui-form-preview__value">{{.Book.Total}}</span>
+                    <span class="weui-form-preview__value">{{.Total}}</span>
                 </div>
                 <div class="weui-form-preview__item">
                     <label class="weui-form-preview__label">缓存时间</label>
-                    <span class="weui-form-preview__value"> {{ .Book.UpdatedAt.Format "2006-01-02 15:04:05" }}</span>
+                    <span class="weui-form-preview__value"> {{ .UpdatedAt.Format "2006-01-02 15:04:05" }}</span>
                 </div>
             </div>
             <div class="weui-form-preview__ft">
                 {{ if .UnFollowBtm }}
-                
                 <a class="weui-form-preview__btn weui-form-preview__btn_default" href="{{.UnFollowLink}}">弃追本书</a>
                 {{ end }}
-                <a class="weui-form-preview__btn weui-form-preview__btn_primary" href="{{.Book.ChapterURL}}">前往查看</a>
+                <a class="weui-form-preview__btn weui-form-preview__btn_primary" href="{{.ChapterURL}}">前往查看</a>
             </div>
         </div>
 		

@@ -1,12 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"io"
 	"net/http"
 	"strconv"
-
-	"fmt"
+	"time"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -31,8 +31,22 @@ func Hello(c echo.Context) error {
 
 // JumpData 所用数据包
 type JumpData struct {
-	User         models.User
-	Book         models.Book
+	UserID       uint
+	OpenID       string
+	Nickname     string
+	Head         string
+	BookID       uint
+	Name         string
+	Chapter      string
+	Total        string
+	Author       string
+	Date         string
+	BookURL      string
+	ChapterURL   string
+	AuthorURL    string
+	IsVIP        bool
+	Rank         float64
+	UpdatedAt    time.Time
 	UnFollowBtm  bool
 	UnFollowLink string
 }
@@ -57,14 +71,28 @@ func Jump(c echo.Context) error {
 
 	var book models.Book
 	db.First(&book, id)
-	data.Book = book
+	if book.ID == 0 {
+		// return c.Render(http.StatusOK, "404", "")
+	}
+	data.BookID = book.ID
+	data.Name = book.Name
+	data.Chapter = book.Chapter
+	data.Total = book.Total
+	data.Author = book.Author
+	data.BookURL = book.BookURL
+	data.ChapterURL = book.ChapterURL
+	data.IsVIP = book.IsVIP
+	data.UpdatedAt = book.UpdatedAt
 	if openID != "" {
 		var user models.User
-		db.Where("open_id", "=", openID).First(&user)
+		db.Where("open_id = ?", openID).First(&user)
 		if user.ID == 0 {
 			// return c.Render(http.StatusOK, "404", "")
 		} else {
-			data.User = user
+			data.UserID = user.ID
+			data.OpenID = user.OpenID
+			data.Nickname = user.Nickname
+			data.Head = user.Head
 			data.UnFollowBtm = true
 			data.UnFollowLink = fmt.Sprintf("/unfollow/%v?open_id=%v", book.ID, user.OpenID)
 		}
