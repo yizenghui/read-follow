@@ -111,6 +111,7 @@ func syncBook(info spider.Book) {
 		book.AuthorURL = info.AuthorURL
 		book.BookURL = info.BookURL
 		book.IsVIP = info.IsVIP
+		book.Total = info.Total
 		db.Save(&book)
 		fmt.Printf("%v  %v  %v\n", book.ID, book.Name, book.Chapter)
 	}

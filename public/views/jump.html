@@ -12,10 +12,7 @@
         <!-- 使用 -->
 		<div class="weui-form-preview">
             <div class="weui-form-preview__hd">
-                <label class="weui-form-preview__label">
-                    {{.Chapter}} 
-                </label>
-                <em class="weui-form-preview__value"> {{ if .IsVIP }}vip{{ end }} </em>
+                <em class="weui-form-preview__value" style="font-size:1.2em">{{.Chapter}}{{ if .IsVIP }} vip {{ end }}</em>
                 
             </div>
             <div class="weui-form-preview__bd">
@@ -27,14 +24,10 @@
                     <label class="weui-form-preview__label">作者</label>
                     <span class="weui-form-preview__value">{{.Author}}</span>
                 </div>
-                
-                 <div class="weui-form-preview__item">
-                    <label class="weui-form-preview__label">类型</label>
-                    <span class="weui-form-preview__value">{{ if .IsVIP }} vip {{else}} 免费 {{ end }}</span>
-                </div>
+
                 <div class="weui-form-preview__item">
                     <label class="weui-form-preview__label">首发</label>
-                    <span class="weui-form-preview__value"> {{.BookURL}} </span>
+                    <span class="weui-form-preview__value"> {{.Posted}} </span>
                 </div>
                 <div class="weui-form-preview__item">
                     <label class="weui-form-preview__label">作品字数</label>
@@ -47,9 +40,12 @@
             </div>
             <div class="weui-form-preview__ft">
                 {{ if .UnFollowBtm }}
-                <a class="weui-form-preview__btn weui-form-preview__btn_default" href="{{.UnFollowLink}}">弃追本书</a>
+                <a class="weui-form-preview__btn weui-form-preview__btn_default" href="{{.UnFollowLink}}">弃追</a>
                 {{ end }}
-                <a class="weui-form-preview__btn weui-form-preview__btn_primary" href="{{.ChapterURL}}">前往查看</a>
+                {{ if .FollowBtm }}
+                <a class="weui-form-preview__btn weui-form-preview__btn_default" href="{{.FollowLink}}">追书</a>
+                {{ end }}
+                <a class="weui-form-preview__btn weui-form-preview__btn_primary" href="{{.JumpURL}}">前往查看</a>
             </div>
         </div>
 		

@@ -125,6 +125,33 @@ func Test_UserFollowBook(t *testing.T) {
 
 }
 
+func Test_UserFollowCount(t *testing.T) {
+
+	var db *gorm.DB
+
+	var err error
+	// db, err = gorm.Open("sqlite3", "book.db")
+	db, err = gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
+
+	if err != nil {
+		panic("连接数据库失败")
+	}
+
+	// 自动迁移模式
+	db.AutoMigrate(&User{})
+	defer db.Close()
+
+	var user User
+	db.First(&user, 1)
+
+	// var books []Book
+	// db.Find(&books)
+	// db.Model(&user).Association("books").Append(books)
+
+	count := db.Model(&user).Where("book_id = ?", 12).Association("books").Count()
+	fmt.Println(count)
+}
+
 func Test_UserFollowAllBook(t *testing.T) {
 
 	var db *gorm.DB

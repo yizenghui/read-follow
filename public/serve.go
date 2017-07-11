@@ -11,6 +11,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/labstack/echo"
+	"github.com/yizenghui/read-follow/core/common"
 	"github.com/yizenghui/read-follow/core/models"
 )
 
@@ -49,6 +50,10 @@ type JumpData struct {
 	UpdatedAt    time.Time
 	UnFollowBtm  bool
 	UnFollowLink string
+	FollowBtm    bool
+	FollowLink   string
+	JumpURL      string
+	Posted       string
 }
 
 //Jump test
@@ -80,9 +85,11 @@ func Jump(c echo.Context) error {
 	data.Total = book.Total
 	data.Author = book.Author
 	data.BookURL = book.BookURL
+	data.Posted = common.TransformBookPosted(book.BookURL)
 	data.ChapterURL = book.ChapterURL
 	data.IsVIP = book.IsVIP
 	data.UpdatedAt = book.UpdatedAt
+	data.JumpURL = common.TransformBookURL(book.BookURL)
 	if openID != "" {
 		var user models.User
 		db.Where("open_id = ?", openID).First(&user)
@@ -93,12 +100,93 @@ func Jump(c echo.Context) error {
 			data.OpenID = user.OpenID
 			data.Nickname = user.Nickname
 			data.Head = user.Head
-			data.UnFollowBtm = true
-			data.UnFollowLink = fmt.Sprintf("/unfollow/%v?open_id=%v", book.ID, user.OpenID)
+
+			HasFollow := db.Model(&user).Where("book_id = ?", book.ID).Association("books").Count()
+
+			if HasFollow != 0 {
+				data.UnFollowBtm = true
+				data.UnFollowLink = fmt.Sprintf("/unfollow/%v?open_id=%v", book.ID, user.OpenID)
+			} else {
+				data.FollowBtm = true
+				data.FollowLink = fmt.Sprintf("/follow/%v?open_id=%v", book.ID, user.OpenID)
+			}
 		}
 	}
 
 	return c.Render(http.StatusOK, "jump", data)
+}
+
+//Unfollow 取消关注
+func Unfollow(c echo.Context) error {
+
+	id, _ := strconv.Atoi(c.Param("id"))
+	openID := c.QueryParam("open_id")
+	db, err := gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
+	if err != nil {
+		panic("连接数据库失败")
+	}
+
+	defer db.Close()
+
+	var book models.Book
+	db.First(&book, id)
+	if book.ID == 0 {
+		// return c.Render(http.StatusOK, "404", "")
+	}
+
+	if openID != "" {
+		var user models.User
+		db.Where("open_id = ?", openID).First(&user)
+		if user.ID == 0 {
+			// return c.Render(http.StatusOK, "404", "")
+		} else {
+
+			db.Model(&user).Association("books").Delete(book)
+			// return c.JSON(http.StatusOK, "unfollow")
+			return c.Redirect(http.StatusFound, fmt.Sprintf("/jump/%d?open_id=%v", id, openID))
+		}
+	}
+	// return echo.NewHTTPError(http.StatusFound)
+
+	// return c.JSON(http.StatusOK, "error")
+	return c.Redirect(http.StatusFound, fmt.Sprintf("/jump/%d?open_id=%v", id, openID))
+
+}
+
+//Follow 关注
+func Follow(c echo.Context) error {
+
+	id, _ := strconv.Atoi(c.Param("id"))
+	openID := c.QueryParam("open_id")
+	db, err := gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
+	if err != nil {
+		panic("连接数据库失败")
+	}
+
+	defer db.Close()
+
+	var book models.Book
+	db.First(&book, id)
+	if book.ID == 0 {
+		// return c.Render(http.StatusOK, "404", "")
+	}
+
+	if openID != "" {
+		var user models.User
+		db.Where("open_id = ?", openID).First(&user)
+		if user.ID == 0 {
+			// return c.Render(http.StatusOK, "404", "")
+		} else {
+			// 关注
+			db.Model(&user).Association("books").Append(book)
+			return c.Redirect(http.StatusFound, fmt.Sprintf("/jump/%d?open_id=%v", id, openID))
+			// return c.JSON(http.StatusOK, "follow")
+		}
+	}
+	// return echo.NewHTTPError(http.StatusFound)
+	// return c.JSON(http.StatusOK, "error")
+
+	return c.Redirect(http.StatusFound, fmt.Sprintf("/jump/%d?open_id=%v", id, openID))
 }
 
 func main() {
@@ -112,6 +200,8 @@ func main() {
 	// e.Static("/static", "../assets")
 
 	e.GET("/jump/:id", Jump)
+	e.GET("/follow/:id", Follow)
+	e.GET("/unfollow/:id", Unfollow)
 	e.GET("/hello", Hello)
 
 	// Route => handler

@@ -1,15 +1,46 @@
 package spider
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/yizenghui/spider/code"
 )
 
 //QiDian 起点
 type QiDian struct {
 	UpdateListURL string
+	BookInfoURL   string
+}
+
+// NewQiDian 起点资源
+func NewQiDian(url string) QiDian {
+
+	qidian := QiDian{}
+	// 起点列表
+	checkLinkIsQiDianList, _ := regexp.MatchString(`a.qidian.com\/\?orderId=5&page=(?P<p>\d+)&style=2`, url)
+	if checkLinkIsQiDianList {
+		qidian.UpdateListURL = url
+	}
+
+	// 起点详细页
+	regInfoBook := `book.qidian.com\/info\/(?P<book_id>\d+)`
+	checkLinkIsQiDianInfo, _ := regexp.MatchString(regInfoBook, url)
+	if checkLinkIsQiDianInfo {
+		Map := code.SelectString(regInfoBook, url)
+		qidian.BookInfoURL = fmt.Sprintf("http://book.qidian.com/info/%v", Map["book_id"])
+	}
+
+	// regQiDianChapter := `\/\/book.qidian.com\/info\/(?P<book_id>\d+)`
+	// checkLinkIsQiDian, _ := regexp.MatchString(repQiDian, url)
+	// if checkLinkIsQiDian {
+	// 	Map := code.SelectString(repQiDian, url)
+	// 	qidian.BookInfoURL = fmt.Sprintf("http://book.qidian.com/info/%v", Map["book_id"])
+	// }
+
+	return qidian
 }
 
 //GetUpdate 起点
@@ -50,4 +81,35 @@ func (q *QiDian) GetUpdate() ([]Book, error) {
 	})
 
 	return books, nil
+}
+
+// GetInfo 获取书籍基础信息(与列表一致)
+func (q *QiDian) GetInfo() (Book, error) {
+
+	var book Book
+	g, e := goquery.NewDocument(q.BookInfoURL)
+	if e != nil {
+		return book, e
+	}
+
+	book.BookURL = q.BookInfoURL
+	book.ChapterURL, _ = g.Find(".book-info-detail").Find(".update").Find(".cf").Find(".blue").Attr("href")
+
+	book.Chapter = strings.TrimSpace(g.Find(".book-info-detail").Find(".update").Find(".cf").Find(".blue").Text())
+
+	book.Date = strings.TrimSpace(g.Find(".book-info-detail").Find(".update").Find(".cf").Find(".time").Text())
+
+	book.Author = strings.TrimSpace(g.Find(".book-info").Find(".writer").Text())
+
+	book.AuthorURL, _ = g.Find(".book-info").Find(".writer").Attr("href")
+
+	book.Total = strings.TrimSpace(g.Find(".book-info").Find("p").Eq(2).Find("em").Eq(0).Text())
+
+	checkLinkIsJobInfo, _ := regexp.MatchString(`vip(?P<reader>\w+).qidian.com`, book.ChapterURL)
+	if checkLinkIsJobInfo {
+		book.IsVIP = true
+	} else {
+		book.IsVIP = false
+	}
+	return book, nil
 }
