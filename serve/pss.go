@@ -23,7 +23,7 @@ type (
 		Name       string `json:"name" valid:"Required; MaxSize(24)"`
 		Chapter    string `json:"chapter" valid:"Required; MaxSize(64)"`
 		Total      string `json:"total" valid:"MaxSize(24);"`
-		Author     string `json:"author" valid:"Required; MaxSize(12);"`
+		Author     string `json:"author" valid:"Required; MaxSize(24);"`
 		BookURL    string `json:"book_url" valid:"Required; MaxSize(255);"`
 		ChapterURL string `json:"Chapter_url" valid:"MaxSize(255);"`
 		AuthorURL  string `json:"author_url" valid:"MaxSize(255);"`

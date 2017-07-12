@@ -6,11 +6,16 @@ package event
 
 import (
 	"testing"
+	"time"
+
+	"fmt"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"github.com/yizenghui/read-follow/core/common"
 	"github.com/yizenghui/read-follow/core/models"
+	"github.com/yizenghui/sda"
 )
 
 func Test_BookFollowsNotice(t *testing.T) {
@@ -39,5 +44,36 @@ func Test_BookFollowsNotice(t *testing.T) {
 	BookUpdateNotice(book, users)
 	// 移除所有关联关系
 	// db.Model(&user).Association("books").Clear()
+
+}
+
+func Test_UserFollowBookForURL(t *testing.T) {
+	query := "http://book.zongheng.com/book/490607.html"
+
+	spiderBook, _ := sda.FindBookBaseByBookURL(query)
+	if spiderBook.Name != "" {
+
+		db, err := gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
+		if err != nil {
+			panic("连接数据库失败")
+		}
+
+		qbook := spider.TransformBook(spiderBook)
+
+		var book models.Book
+
+		db.Where(models.Book{BookURL: qbook.BookURL}).FirstOrCreate(&book)
+
+		// common.RequstBookSaveData(&book, qbook)
+
+		// TODO 获取票数
+		vote := 1   // 支持
+		devote := 0 // 反对
+		level := 0  //级别
+		// 获取排行分数
+		book.Rank = common.GetRank(vote, devote, time.Now().Unix(), level)
+		db.Save(&book)
+		fmt.Println(book)
+	}
 
 }

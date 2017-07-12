@@ -13,6 +13,7 @@ import (
 	"github.com/labstack/echo"
 	"github.com/yizenghui/read-follow/core/common"
 	"github.com/yizenghui/read-follow/core/models"
+	"github.com/yizenghui/read-follow/spider"
 )
 
 //Template 模板
@@ -189,6 +190,60 @@ func Follow(c echo.Context) error {
 	return c.Redirect(http.StatusFound, fmt.Sprintf("/jump/%d?open_id=%v", id, openID))
 }
 
+//Find 关注
+func Find(c echo.Context) error {
+	return c.Render(http.StatusOK, "find", "World")
+}
+
+//RequstBookSaveData 把请求的数据包转成数据模型中的参数
+func RequstBookSaveData(book *models.Book, qb spider.PostBook) error {
+
+	book.Name = qb.Name
+	book.Chapter = qb.Chapter
+	book.Total = qb.Total
+	book.Author = qb.Author
+	book.BookURL = qb.BookURL
+	book.ChapterURL = qb.ChapterURL
+	book.AuthorURL = qb.AuthorURL
+	book.IsVIP = qb.IsVIP
+
+	return nil
+}
+
+//Search 搜索
+func Search(c echo.Context) error {
+	query := c.QueryParam("q")
+
+	spiderBook, _ := spider.Find(query)
+	if spiderBook.Name != "" {
+
+		db, err := gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
+		if err != nil {
+			panic("连接数据库失败")
+		}
+
+		qbook := spider.TransformBook(spiderBook)
+
+		var book models.Book
+
+		db.Where(models.Book{BookURL: qbook.BookURL}).FirstOrCreate(&book)
+
+		RequstBookSaveData(&book, qbook)
+
+		// TODO 获取票数
+		vote := 1   // 支持
+		devote := 0 // 反对
+		level := 0  //级别
+		// 获取排行分数
+		book.Rank = common.GetRank(vote, devote, time.Now().Unix(), level)
+		db.Save(&book)
+
+		return c.Render(http.StatusOK, "search", book)
+	}
+
+	return c.Render(http.StatusOK, "hello", "World")
+}
+
 func main() {
 
 	t := &Template{
@@ -202,6 +257,8 @@ func main() {
 	e.GET("/jump/:id", Jump)
 	e.GET("/follow/:id", Follow)
 	e.GET("/unfollow/:id", Unfollow)
+	e.GET("/search", Search)
+	e.GET("/find", Find)
 	e.GET("/hello", Hello)
 
 	// Route => handler
