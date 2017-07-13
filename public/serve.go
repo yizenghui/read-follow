@@ -13,7 +13,8 @@ import (
 	"github.com/labstack/echo"
 	"github.com/yizenghui/read-follow/core/common"
 	"github.com/yizenghui/read-follow/core/models"
-	"github.com/yizenghui/read-follow/spider"
+	"github.com/yizenghui/sda"
+	"github.com/yizenghui/sda/code"
 )
 
 //Template 模板
@@ -176,72 +177,71 @@ func Follow(c echo.Context) error {
 		var user models.User
 		db.Where("open_id = ?", openID).First(&user)
 		if user.ID == 0 {
-			// return c.Render(http.StatusOK, "404", "")
 		} else {
-			// 关注
 			db.Model(&user).Association("books").Append(book)
 			return c.Redirect(http.StatusFound, fmt.Sprintf("/jump/%d?open_id=%v", id, openID))
-			// return c.JSON(http.StatusOK, "follow")
 		}
 	}
-	// return echo.NewHTTPError(http.StatusFound)
-	// return c.JSON(http.StatusOK, "error")
-
 	return c.Redirect(http.StatusFound, fmt.Sprintf("/jump/%d?open_id=%v", id, openID))
 }
 
-//Find 关注
+//Find 查找Book资源
 func Find(c echo.Context) error {
-	return c.Render(http.StatusOK, "find", "World")
+	openID := c.QueryParam("open_id")
+	query := c.QueryParam("q")
+
+	url := code.ExplainBookDetailedAddress(query)
+
+	if url != "" {
+
+		spiderBook, _ := sda.FindBookBaseByBookURL(url)
+		if spiderBook.Name != "" {
+
+			db, err := gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
+			if err != nil {
+				panic("连接数据库失败")
+			}
+
+			var book models.Book
+			db.Where(models.Book{BookURL: spiderBook.BookURL}).FirstOrCreate(&book)
+
+			book.Name = spiderBook.Name
+			book.Author = spiderBook.Author
+			book.Chapter = spiderBook.Chapter
+			book.Total = spiderBook.Total
+			book.AuthorURL = spiderBook.AuthorURL
+			book.ChapterURL = spiderBook.ChapterURL
+			book.BookURL = spiderBook.BookURL
+
+			// TODO 获取票数
+			vote := 1   // 支持
+			devote := 0 // 反对
+			level := 0  //级别
+			// 获取排行分数
+			book.Rank = common.GetRank(vote, devote, time.Now().Unix(), level)
+			db.Save(&book)
+
+			return c.Redirect(http.StatusFound, fmt.Sprintf("/jump/%d?open_id=%v", book.ID, openID))
+		}
+
+		return c.Render(http.StatusOK, "hello", "找不到您所想要的资源")
+	}
+
+	return c.Render(http.StatusOK, "find", openID)
+
 }
 
-//RequstBookSaveData 把请求的数据包转成数据模型中的参数
-func RequstBookSaveData(book *models.Book, qb spider.PostBook) error {
-
-	book.Name = qb.Name
-	book.Chapter = qb.Chapter
-	book.Total = qb.Total
-	book.Author = qb.Author
-	book.BookURL = qb.BookURL
-	book.ChapterURL = qb.ChapterURL
-	book.AuthorURL = qb.AuthorURL
-	book.IsVIP = qb.IsVIP
-
-	return nil
+//Home 查找Book资源
+func Home(c echo.Context) error {
+	openID := c.QueryParam("open_id")
+	return c.Render(http.StatusOK, "home", openID)
 }
 
-//Search 搜索
+//Search 搜索本地book
 func Search(c echo.Context) error {
 	query := c.QueryParam("q")
 
-	spiderBook, _ := spider.Find(query)
-	if spiderBook.Name != "" {
-
-		db, err := gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
-		if err != nil {
-			panic("连接数据库失败")
-		}
-
-		qbook := spider.TransformBook(spiderBook)
-
-		var book models.Book
-
-		db.Where(models.Book{BookURL: qbook.BookURL}).FirstOrCreate(&book)
-
-		RequstBookSaveData(&book, qbook)
-
-		// TODO 获取票数
-		vote := 1   // 支持
-		devote := 0 // 反对
-		level := 0  //级别
-		// 获取排行分数
-		book.Rank = common.GetRank(vote, devote, time.Now().Unix(), level)
-		db.Save(&book)
-
-		return c.Render(http.StatusOK, "search", book)
-	}
-
-	return c.Render(http.StatusOK, "hello", "World")
+	return c.Render(http.StatusOK, "search", query)
 }
 
 func main() {
@@ -254,6 +254,7 @@ func main() {
 	e.Renderer = t
 	// e.Static("/static", "../assets")
 
+	e.GET("/", Home)
 	e.GET("/jump/:id", Jump)
 	e.GET("/follow/:id", Follow)
 	e.GET("/unfollow/:id", Unfollow)
@@ -262,9 +263,9 @@ func main() {
 	e.GET("/hello", Hello)
 
 	// Route => handler
-	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello, World!\n")
-	})
+	// e.GET("/", func(c echo.Context) error {
+	// 	return c.String(http.StatusOK, "Hello, World!\n")
+	// })
 
 	// Start server
 	e.Logger.Fatal(e.Start(":1323"))

@@ -13,13 +13,20 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
-func Test_TransformURL(t *testing.T) {
-	// 17K
-	u1 := TransformBookURL("http://www.17k.com/book/2124315.html")
-	// 纵横
-	u2 := TransformBookURL("http://book.zongheng.com/book/683149.html")
-	// 起点
-	u3 := TransformBookURL("http://book.qidian.com/info/1009961125")
+func Test_TransformData(t *testing.T) {
+	arr := []string{
+		"12万",
+		"12.34万",
+		"12.34",
+		"12.00",
+		"123446",
+		"1234",
+	}
 
-	fmt.Println(u1, u2, u3)
+	for _, k := range arr {
+		i := TransformBookTotal(k)
+		f := PrintBookTotal(i)
+		fmt.Println(i, f)
+	}
+
 }

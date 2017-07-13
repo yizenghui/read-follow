@@ -48,8 +48,8 @@ func Test_BookFollowsNotice(t *testing.T) {
 }
 
 func Test_UserFollowBookForURL(t *testing.T) {
-	query := "http://book.zongheng.com/book/490607.html"
-
+	query := "http://book.qidian.com/info/1005986994"
+	openID := "o7UTkjr7if4AQgcPmveQ5wJ5alsA"
 	spiderBook, _ := sda.FindBookBaseByBookURL(query)
 	if spiderBook.Name != "" {
 
@@ -58,13 +58,17 @@ func Test_UserFollowBookForURL(t *testing.T) {
 			panic("连接数据库失败")
 		}
 
-		qbook := spider.TransformBook(spiderBook)
-
 		var book models.Book
 
-		db.Where(models.Book{BookURL: qbook.BookURL}).FirstOrCreate(&book)
+		db.Where(models.Book{BookURL: spiderBook.BookURL}).FirstOrCreate(&book)
 
-		// common.RequstBookSaveData(&book, qbook)
+		book.Name = spiderBook.Name
+		book.Author = spiderBook.Author
+		book.Chapter = spiderBook.Chapter
+		book.Total = spiderBook.Total
+		book.AuthorURL = spiderBook.AuthorURL
+		book.ChapterURL = spiderBook.ChapterURL
+		book.BookURL = spiderBook.BookURL
 
 		// TODO 获取票数
 		vote := 1   // 支持
@@ -73,7 +77,19 @@ func Test_UserFollowBookForURL(t *testing.T) {
 		// 获取排行分数
 		book.Rank = common.GetRank(vote, devote, time.Now().Unix(), level)
 		db.Save(&book)
+
 		fmt.Println(book)
+		if openID != "" {
+			var user models.User
+			db.Where("open_id = ?", openID).First(&user)
+			if user.ID == 0 {
+				// return c.Render(http.StatusOK, "404", "")
+			} else {
+				// 关注
+				db.Model(&user).Association("books").Append(book)
+
+			}
+		}
 	}
 
 }
