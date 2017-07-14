@@ -84,7 +84,8 @@ func Jump(c echo.Context) error {
 	data.BookID = book.ID
 	data.Name = book.Name
 	data.Chapter = book.Chapter
-	data.Total = book.Total
+	total := common.TransformBookTotal(book.Total)
+	data.Total = common.PrintBookTotal(total)
 	data.Author = book.Author
 	data.BookURL = book.BookURL
 	data.Posted = common.TransformBookPosted(book.BookURL)
