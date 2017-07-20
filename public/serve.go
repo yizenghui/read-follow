@@ -255,7 +255,7 @@ func main() {
 	e.Renderer = t
 	// e.Static("/static", "../assets")
 
-	e.GET("/", Home)
+	// e.GET("/", Home)
 	e.GET("/jump/:id", Jump)
 	e.GET("/follow/:id", Follow)
 	e.GET("/unfollow/:id", Unfollow)
@@ -264,9 +264,9 @@ func main() {
 	e.GET("/hello", Hello)
 
 	// Route => handler
-	// e.GET("/", func(c echo.Context) error {
-	// 	return c.String(http.StatusOK, "Hello, World!\n")
-	// })
+	e.GET("/", func(c echo.Context) error {
+		return c.String(http.StatusOK, "域名备案中")
+	})
 
 	// Start server
 	e.Logger.Fatal(e.Start(":80"))
