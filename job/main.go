@@ -90,9 +90,8 @@ func syncBook(info data.Book) {
 	var book Book
 	db.Where(Book{BookURL: info.BookURL}).FirstOrCreate(&book)
 
-	//TODO 需要验证地址是否会改变
 	// 章节地址与数据库中的不同
-	if book.ChapterURL != info.ChapterURL && book.Chapter != "" && book.ChapterURL != "" {
+	if book.ChapterURL != info.ChapterURL {
 		book.Name = info.Name
 		book.Chapter = info.Chapter
 		book.ChapterURL = info.ChapterURL
@@ -128,14 +127,17 @@ func Publish() {
 	if book.ID > 0 {
 		book.PublishAt = time.Now().Unix()
 		db.Save(&book)
-		client := rpc.NewClient("http://127.0.0.1:819/")
-		var stub *Stub
-		client.UseService(&stub)
-		postBook := TransformBook(book)
-		if jsonStr, err := json.Marshal(postBook); err == nil {
-			_, err := stub.Save(string(jsonStr))
-			if err != nil {
-				fmt.Println(err)
+
+		if book.Chapter != "" && book.ChapterURL != "" {
+			client := rpc.NewClient("http://127.0.0.1:819/")
+			var stub *Stub
+			client.UseService(&stub)
+			postBook := TransformBook(book)
+			if jsonStr, err := json.Marshal(postBook); err == nil {
+				_, err := stub.Save(string(jsonStr))
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 		}
 	}
