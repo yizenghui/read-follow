@@ -51,11 +51,27 @@ func main() {
 func syncUpdateList() {
 	ticker1 := time.NewTicker(time.Minute * 2)
 	for _ = range ticker1.C {
-		go spiderBookList("http://a.qidian.com/?orderId=5&page=1&style=2")
-		go spiderBookList("http://book.zongheng.com/store/c0/c0/b0/u0/p1/v9/s9/t0/ALL.html")
-		go spiderBookList("http://all.17k.com/lib/book/2_0_0_0_0_0_0_0_1.html")
+		go SpiderBookJob("http://a.qidian.com/?orderId=5&page=1&style=2", 3, time.Second*3)
+		// go spiderBookList("http://a.qidian.com/?orderId=5&page=1&style=2")
+		go SpiderBookJob("http://book.zongheng.com/store/c0/c0/b0/u0/p%d/v9/s9/t0/ALL.html", 3, time.Second*3)
+		// go spiderBookList("http://book.zongheng.com/store/c0/c0/b0/u0/p1/v9/s9/t0/ALL.html")
+		go SpiderBookJob("http://all.17k.com/lib/book/2_0_0_0_0_0_0_0_%d.html", 3, time.Second*3)
+		// go spiderBookList("http://all.17k.com/lib/book/2_0_0_0_0_0_0_0_1.html")
 	}
 
+}
+
+// SpiderBookJob 采集
+/**
+FormatURL 列表格式
+page 要采集到第几页
+d 中止间隔
+*/
+func SpiderBookJob(FormatURL string, page int, d time.Duration) {
+	for i := 1; i < page; i++ {
+		time.Sleep(time.Second * 2)
+		spiderBookList(fmt.Sprintf(FormatURL, i))
+	}
 }
 
 func spiderBookList(url string) {
@@ -76,7 +92,7 @@ func syncBook(info data.Book) {
 
 	//TODO 需要验证地址是否会改变
 	// 章节地址与数据库中的不同
-	if book.ChapterURL != info.ChapterURL {
+	if book.ChapterURL != info.ChapterURL && book.Chapter != "" && book.ChapterURL != "" {
 		book.Name = info.Name
 		book.Chapter = info.Chapter
 		book.ChapterURL = info.ChapterURL
