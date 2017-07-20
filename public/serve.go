@@ -79,7 +79,7 @@ func Jump(c echo.Context) error {
 	var book models.Book
 	db.First(&book, id)
 	if book.ID == 0 {
-		// return c.Render(http.StatusOK, "404", "")
+		return c.Redirect(http.StatusFound, "/404.html")
 	}
 	data.BookID = book.ID
 	data.Name = book.Name
@@ -134,7 +134,7 @@ func Unfollow(c echo.Context) error {
 	var book models.Book
 	db.First(&book, id)
 	if book.ID == 0 {
-		// return c.Render(http.StatusOK, "404", "")
+		return c.Redirect(http.StatusFound, "/404.html")
 	}
 
 	if openID != "" {
@@ -146,13 +146,13 @@ func Unfollow(c echo.Context) error {
 
 			db.Model(&user).Association("books").Delete(book)
 			// return c.JSON(http.StatusOK, "unfollow")
-			return c.Redirect(http.StatusFound, fmt.Sprintf("/jump/%d?open_id=%v", id, openID))
+			return c.Redirect(http.StatusFound, fmt.Sprintf("/s/%d?open_id=%v", id, openID))
 		}
 	}
 	// return echo.NewHTTPError(http.StatusFound)
 
 	// return c.JSON(http.StatusOK, "error")
-	return c.Redirect(http.StatusFound, fmt.Sprintf("/jump/%d?open_id=%v", id, openID))
+	return c.Redirect(http.StatusFound, fmt.Sprintf("/s/%d?open_id=%v", id, openID))
 
 }
 
@@ -171,7 +171,7 @@ func Follow(c echo.Context) error {
 	var book models.Book
 	db.First(&book, id)
 	if book.ID == 0 {
-		// return c.Render(http.StatusOK, "404", "")
+		return c.Redirect(http.StatusFound, "/404.html")
 	}
 
 	if openID != "" {
@@ -180,10 +180,87 @@ func Follow(c echo.Context) error {
 		if user.ID == 0 {
 		} else {
 			db.Model(&user).Association("books").Append(book)
-			return c.Redirect(http.StatusFound, fmt.Sprintf("/jump/%d?open_id=%v", id, openID))
+			return c.Redirect(http.StatusFound, fmt.Sprintf("/s/%d?open_id=%v", id, openID))
 		}
 	}
-	return c.Redirect(http.StatusFound, fmt.Sprintf("/jump/%d?open_id=%v", id, openID))
+	return c.Redirect(http.StatusFound, fmt.Sprintf("/s/%d?open_id=%v", id, openID))
+}
+
+// DataBook 所用数据包
+type DataBook struct {
+	ID           uint
+	Name         string
+	Chapter      string
+	URL          string
+	BookURL      string
+	Posted       string
+	UpdatedAt    time.Time
+	UnFollowBtm  bool
+	UnFollowLink string
+	FollowBtm    bool
+	FollowLink   string
+}
+
+// UserData 所用数据包
+type UserData struct {
+	UserID    uint
+	OpenID    string
+	Nickname  string
+	Head      string
+	Books     []DataBook
+	NotFollow bool
+}
+
+//User 关注
+func User(c echo.Context) error {
+	data := UserData{}
+	id, _ := strconv.Atoi(c.Param("id"))
+	openID := c.QueryParam("open_id")
+	db, err := gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
+	if err != nil {
+		panic("连接数据库失败")
+	}
+
+	defer db.Close()
+
+	var user models.User
+	db.First(&user, id)
+	if user.ID == 0 {
+		return c.Redirect(http.StatusFound, "/404.html")
+	}
+
+	data.Nickname = user.Nickname
+	var books []models.Book
+	db.Model(&user).Association("books").Find(&books)
+
+	if books != nil {
+
+		for _, b := range books {
+			dbo := DataBook{ID: b.ID, Name: b.Name, Chapter: b.Chapter, UpdatedAt: b.UpdatedAt}
+			if openID != "" {
+				dbo.URL = fmt.Sprintf("/s/%d?open_id=%v", b.ID, openID)
+				// TODO 细分 open_id 与 uid 是否同一个人，分设书籍关注状态 (关注接口也需要做重定向)
+				// if openID == user.OpenID {
+				// 	dbo.UnFollowBtm = true
+				// 	dbo.UnFollowLink = fmt.Sprintf("/unfollow/%d?open_id=%v", b.ID, openID)
+				// }
+			} else {
+				dbo.URL = fmt.Sprintf("/s/%d", b.ID)
+			}
+			dbo.Posted = common.TransformBookPosted(b.BookURL)
+			dbo.BookURL = common.TransformBookURL(b.BookURL)
+			data.Books = append(data.Books, dbo)
+		}
+	} else {
+		data.NotFollow = true
+	}
+
+	if openID != "" {
+		if user.OpenID == openID {
+
+		}
+	}
+	return c.Render(http.StatusOK, "user", data)
 }
 
 //Find 查找Book资源
@@ -222,7 +299,7 @@ func Find(c echo.Context) error {
 			book.Rank = common.GetRank(vote, devote, time.Now().Unix(), level)
 			db.Save(&book)
 
-			return c.Redirect(http.StatusFound, fmt.Sprintf("/jump/%d?open_id=%v", book.ID, openID))
+			return c.Redirect(http.StatusFound, fmt.Sprintf("/s/%d?open_id=%v", book.ID, openID))
 		}
 
 		return c.Render(http.StatusOK, "hello", "找不到您所想要的资源")
@@ -245,6 +322,11 @@ func Search(c echo.Context) error {
 	return c.Render(http.StatusOK, "search", query)
 }
 
+//PageNotFound 页面找不到
+func PageNotFound(c echo.Context) error {
+	return c.Render(http.StatusOK, "404", "")
+}
+
 func main() {
 
 	t := &Template{
@@ -256,12 +338,15 @@ func main() {
 	// e.Static("/static", "../assets")
 
 	// e.GET("/", Home)
-	e.GET("/jump/:id", Jump)
+	e.GET("/u/:id", User)
+	// e.GET("/jump/:id", Jump)
+	e.GET("/s/:id", Jump)
 	e.GET("/follow/:id", Follow)
 	e.GET("/unfollow/:id", Unfollow)
 	e.GET("/search", Search)
 	e.GET("/find", Find)
 	e.GET("/hello", Hello)
+	e.GET("/404.html", PageNotFound)
 
 	// Route => handler
 	e.GET("/", func(c echo.Context) error {
@@ -269,5 +354,5 @@ func main() {
 	})
 
 	// Start server
-	e.Logger.Fatal(e.Start(":80"))
+	e.Logger.Fatal(e.Start(":1323"))
 }

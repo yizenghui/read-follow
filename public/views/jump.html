@@ -40,12 +40,12 @@
             </div>
             <div class="weui-form-preview__ft">
                 {{ if .UnFollowBtm }}
-                <a class="weui-form-preview__btn weui-form-preview__btn_default" href="{{.UnFollowLink}}">弃追</a>
+                <a class="weui-form-preview__btn weui-form-preview__btn_default" href="{{.UnFollowLink}}" rel="nofollow">弃追</a>
                 {{ end }}
                 {{ if .FollowBtm }}
-                <a class="weui-form-preview__btn weui-form-preview__btn_default" href="{{.FollowLink}}">追书</a>
+                <a class="weui-form-preview__btn weui-form-preview__btn_default" href="{{.FollowLink}}" rel="nofollow">追书</a>
                 {{ end }}
-                <a class="weui-form-preview__btn weui-form-preview__btn_primary" href="{{.JumpURL}}">前往查看</a>
+                <a class="weui-form-preview__btn weui-form-preview__btn_primary" href="{{.JumpURL}}" rel="nofollow">前往查看</a>
             </div>
         </div>
 		

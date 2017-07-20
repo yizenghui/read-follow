@@ -51,7 +51,7 @@ func main() {
 func syncUpdateList() {
 	ticker1 := time.NewTicker(time.Minute * 2)
 	for _ = range ticker1.C {
-		go SpiderBookJob("http://a.qidian.com/?orderId=5&page=1&style=2", 3, time.Second*3)
+		go SpiderBookJob("http://a.qidian.com/?orderId=5&page=%d&style=2", 3, time.Second*3)
 		// go spiderBookList("http://a.qidian.com/?orderId=5&page=1&style=2")
 		go SpiderBookJob("http://book.zongheng.com/store/c0/c0/b0/u0/p%d/v9/s9/t0/ALL.html", 3, time.Second*3)
 		// go spiderBookList("http://book.zongheng.com/store/c0/c0/b0/u0/p1/v9/s9/t0/ALL.html")
