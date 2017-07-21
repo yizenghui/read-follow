@@ -206,6 +206,51 @@ type DataBook struct {
 	FollowLink   string
 }
 
+// newData 所用数据包
+type newData struct {
+	Books     []DataBook
+	NotUpdate bool
+}
+
+//New 新更新的
+func New(c echo.Context) error {
+	data := newData{}
+	openID := c.QueryParam("open_id")
+	db, err := gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
+	if err != nil {
+		panic("连接数据库失败")
+	}
+
+	defer db.Close()
+
+	var books []models.Book
+	db.Limit(100).Order("updated_at Desc").Find(&books)
+
+	if books != nil {
+
+		for _, b := range books {
+			dbo := DataBook{ID: b.ID, Name: b.Name, Chapter: b.Chapter, UpdatedAt: b.UpdatedAt}
+			if openID != "" {
+				dbo.URL = fmt.Sprintf("/s/%d?open_id=%v", b.ID, openID)
+				// TODO 细分 open_id 与 uid 是否同一个人，分设书籍关注状态 (关注接口也需要做重定向)
+				// if openID == user.OpenID {
+				// 	dbo.UnFollowBtm = true
+				// 	dbo.UnFollowLink = fmt.Sprintf("/unfollow/%d?open_id=%v", b.ID, openID)
+				// }
+			} else {
+				dbo.URL = fmt.Sprintf("/s/%d", b.ID)
+			}
+			dbo.Posted = common.TransformBookPosted(b.BookURL)
+			dbo.BookURL = common.TransformBookURL(b.BookURL)
+			data.Books = append(data.Books, dbo)
+		}
+	} else {
+		data.NotUpdate = true
+	}
+
+	return c.Render(http.StatusOK, "new", data)
+}
+
 // UserData 所用数据包
 type UserData struct {
 	UserID    uint
@@ -467,6 +512,8 @@ func main() {
 	e.GET("/search", Search)
 	e.GET("/find", Find)
 	e.GET("/hello", Hello)
+	// e.GET("/hot", Hello)
+	e.GET("/new", New)
 	e.GET("/404.html", PageNotFound)
 
 	e.Any("/wx_callback", echoWxCallbackHandler)
@@ -476,5 +523,5 @@ func main() {
 	})
 
 	// Start server
-	e.Logger.Fatal(e.Start(":80"))
+	e.Logger.Fatal(e.Start(":8080"))
 }
