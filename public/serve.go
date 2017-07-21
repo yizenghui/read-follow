@@ -4,10 +4,15 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/chanxuehong/wechat.v2/mp/core"
+	"github.com/chanxuehong/wechat.v2/mp/menu"
+	"github.com/chanxuehong/wechat.v2/mp/message/callback/request"
+	"github.com/chanxuehong/wechat.v2/mp/message/callback/response"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/labstack/echo"
@@ -327,6 +332,122 @@ func PageNotFound(c echo.Context) error {
 	return c.Render(http.StatusOK, "404", "")
 }
 
+const (
+	wxAppId         = "wx702b93aef72f3549"
+	wxAppSecret     = "8b69f45fc737a938cbaaffc05b192394"
+	wxOriId         = "gh_cb5c31e2c2dd"
+	wxToken         = "admin"
+	wxEncodedAESKey = ""
+)
+
+var (
+	// 下面两个变量不一定非要作为全局变量, 根据自己的场景来选择.
+	msgHandler core.Handler
+	msgServer  *core.Server
+
+//	fansCache  *cache.Cache
+)
+
+func init() {
+	//	fansCache = cache.New(5*time.Minute, 30*time.Second)
+	mux := core.NewServeMux()
+	mux.DefaultMsgHandleFunc(defaultMsgHandler)
+	mux.DefaultEventHandleFunc(defaultEventHandler)
+	mux.MsgHandleFunc(request.MsgTypeText, textMsgHandler)
+	mux.EventHandleFunc(menu.EventTypeClick, menuClickEventHandler)
+
+	msgHandler = mux
+	msgServer = core.NewServer(wxOriId, wxAppId, wxToken, wxEncodedAESKey, msgHandler, nil)
+}
+
+func textMsgHandler(ctx *core.Context) {
+
+	// log.Printf("收到文本消息:\n%s\n", ctx.MsgPlaintext)
+
+	msg := request.GetText(ctx.MixedMsg)
+
+	resp := response.NewText(msg.FromUserName, msg.ToUserName, msg.CreateTime, "请多指教")
+
+	// ctx.AESResponse(resp, 0, "", nil) // aes密文回复
+
+	//	resp := response.NewText(msg.FromUserName, msg.ToUserName, msg.CreateTime, msg.Content)
+	ctx.RawResponse(resp) // 明文回复
+	//	ctx.AESResponse(resp, 0, "", nil) // aes密文回复
+}
+
+func defaultMsgHandler(ctx *core.Context) {
+	// log.Printf("收到消息:\n%s\n", ctx.MsgPlaintext)
+	ctx.NoneResponse()
+}
+
+func menuClickEventHandler(ctx *core.Context) {
+
+	db, err := gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
+	if err != nil {
+		panic("连接数据库失败")
+	}
+	// var buffer bytes.Buffer
+
+	// log.Printf("收到菜单 click 事件:\n%s\n", ctx.MsgPlaintext)
+
+	event := menu.GetClickEvent(ctx.MixedMsg)
+
+	// log.Println(event.EventKey)
+
+	fans, _ := common.GetFans(event.FromUserName)
+	// event.FromUserName
+
+	openID := fans.OpenId
+
+	var user models.User
+	db.Where(models.User{OpenID: openID}).FirstOrCreate(&user)
+	if user.Nickname != fans.Nickname {
+		user.Nickname = fans.Nickname
+		user.Head = fans.HeadImageURL
+		db.Save(&user)
+	}
+
+	switch key := event.EventKey; key {
+
+	case "myfollow":
+		//		open_id := event.FromUserName
+		//		fansCache.Set(open_id, key, cache.DefaultExpiration)
+
+		rc := fmt.Sprintf(`<a href="http://readfollow.com/u/%d?open_id=%v">%v的关注</a>`, user.ID, user.OpenID, user.Nickname)
+		resp := response.NewText(event.FromUserName, event.ToUserName, event.CreateTime, rc)
+		// ctx.AESResponse(resp, 0, "", nil) // aes密文回复
+		ctx.RawResponse(resp)
+
+	default:
+		//		open_id := event.FromUserName
+		//		fansCache.Set(open_id, key, cache.DefaultExpiration)
+		resp := response.NewText(event.FromUserName, event.ToUserName, event.CreateTime, "Please look forward to more features!")
+		ctx.RawResponse(resp)
+		// ctx.AESResponse(resp, 0, "", nil) // aes密文回复
+	}
+
+	//ctx.RawResponse(resp) // 明文回复
+	//	ctx.AESResponse(resp, 0, "", nil) // aes密文回复
+}
+
+func defaultEventHandler(ctx *core.Context) {
+	log.Printf("收到事件:\n%s\n", ctx.MsgPlaintext)
+	ctx.NoneResponse()
+}
+
+// wxCallbackHandler 是处理回调请求的 http handler.
+//  1. 不同的 web 框架有不同的实现
+//  2. 一般一个 handler 处理一个公众号的回调请求(当然也可以处理多个, 这里我只处理一个)
+// func wxCallbackHandler(w http.ResponseWriter, r *http.Request) {
+// 	msgServer.ServeHTTP(w, r, nil)
+// }
+
+func echoWxCallbackHandler(c echo.Context) error {
+	msgServer.ServeHTTP(c.Response().Writer, c.Request(), nil)
+	var err error
+	return err
+}
+
 func main() {
 
 	t := &Template{
@@ -348,6 +469,7 @@ func main() {
 	e.GET("/hello", Hello)
 	e.GET("/404.html", PageNotFound)
 
+	e.Any("/wx_callback", echoWxCallbackHandler)
 	// Route => handler
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "域名备案中")

@@ -11,9 +11,9 @@ import (
 
 func Test_Notice(t *testing.T) {
 	toUser := "o7UTkjr7if4AQgcPmveQ5wJ5alsA"
-	bookName := "亡灵元帅"
-	chapter := "安分"
-	url := ""
+	bookName := "龙符"
+	chapter := "第1102章 重生"
+	url := "http://readfollow.com/s/1"
 	msgID, _ := Update(toUser, bookName, chapter, url)
 	fmt.Println(msgID)
 }
